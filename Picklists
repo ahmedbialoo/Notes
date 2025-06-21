@@ -1,0 +1,11 @@
+Picklists:
+pickDataArea(): This shows a list of Dynamics 365 for Finance and Operations
+ companies.
+ pickUserGroups(): This shows a list of user groups in the system.
+ pickUser(): This shows a list of Dynamics 365 for Finance and Operations
+ users.
+ pickTable(): This shows all Dynamics 365 for Finance and Operations tables.
+ pickField(): This shows table fields. The table number has to be specified as an
+ argument for the function.
+ pickClass(): This shows a list of Dynamics 365 for Finance and Operations
+ classes.
