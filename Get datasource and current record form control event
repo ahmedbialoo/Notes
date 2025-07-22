@@ -1,0 +1,2 @@
+FormDataSource projJournalTransHour_ds = sender.datasource();
+ProjJournalTrans currentLine = projJournalTransHour_ds.cursor();
