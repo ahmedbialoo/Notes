@@ -1,0 +1,8 @@
+str roleName = roleStr(SC_ProductReciptAndInvoiceSubmitRole);
+boolean userHasRole =  xUserInfo::checkUserRole(roleName);
+
+if(userHasRole)
+{
+    
+    OK.enabled(false);
+}
