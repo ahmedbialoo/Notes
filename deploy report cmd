@@ -1,0 +1,2 @@
+Cd C:\AOSService\PackagesLocalDirectory\Plugins\AxReportVmRoleStartupTask
+.\DeployAllReportsToSSRS.ps1 -Module <ModelName> -ReportName <ReportName> -PackageInstallLocation "C:\AOSService\PackagesLocalDirectory"
