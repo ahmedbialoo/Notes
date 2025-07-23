@@ -1,0 +1,14 @@
+ [FormControlEventHandler(formControlStr(CustFreeInvoice, ViewOriginal_AR), FormControlEventType::Clicked)]
+ public static void ViewOriginal_AR_OnClicked(FormControl sender, FormControlEventArgs e)
+ {
+     FreeTextInvoicePrinter  printer =  FreeTextInvoicePrinter::ConstructFromDS(sender.formRun().dataSource(formDataSourceStr(CustFreeInvoice, CustInvoiceTable)));
+     if(curExt()=="FS20")
+     {
+         printer.parmReportName(ssrsReportStr( FreeTextInvoice_FFS,ReportARFS20));
+     }
+     else
+     {
+         printer.parmReportName(ssrsReportStr(FreeTextInvoice_FFS,ReportAR));
+     }
+     printer.printSelected();
+}
