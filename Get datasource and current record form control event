@@ -1,2 +1,24 @@
-FormDataSource projJournalTransHour_ds = sender.datasource();
-ProjJournalTrans currentLine = projJournalTransHour_ds.cursor();
+ [FormControlEventHandler(formControlStr(InventJournalCreate, RetailStoreInventory_InventLocationId), FormControlEventType::Modified)]
+ public static void RetailStoreInventory_InventLocationId_OnModified(FormControl sender, FormControlEventArgs e)
+ {
+     FormRun formRun = sender.formRun();
+
+     FormDataSource  inventJournalTable = formRun.dataSource(formDataSourceStr(InventJournalCreate,InventJournalTable));
+
+     InventJournalTable currentLine = inventJournalTable.cursor();
+
+     InventLocation inventLocation;
+
+     if (currentLine.InventLocationId)
+     {
+         select firstOnly Name from inventLocation
+         where inventLocation.InventLocationId == currentLine.InventLocationId;
+
+         currentLine.InventLocationName = inventLocation.Name;
+     }
+     else
+     {
+         currentLine.InventLocationName = '';
+
+     }
+ }
