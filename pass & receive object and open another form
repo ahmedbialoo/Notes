@@ -1,0 +1,24 @@
+in calling form:
+
+Args args = new Args();
+FormRun dialogForm;
+args.name(formStr(Task_DeleteDialog));
+args.record(currentLine); // Pass the temp table
+dialogForm = classFactory.formRunClass(args);
+dialogForm.init();
+dialogForm.run();
+dialogForm.wait(); // wait response of user in dialog cases
+
+in called form :
+ public void init()
+ {
+
+     super();
+     Task_Lines linesTobeDeleted = element.args().record();
+
+     if (linesTobeDeleted)
+     {
+        
+     }
+     
+ }
