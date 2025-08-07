@@ -1,0 +1,5 @@
+Args args = new Args();
+args.caller(this); // Optional: sets the caller object
+args.record(Task_Lines); // Optional: pass a record
+
+new MenuFunction(menuItemDisplayStr(Task_DeleteDialog), MenuItemType::Display).run(args);
