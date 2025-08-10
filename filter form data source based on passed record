@@ -1,0 +1,21 @@
+public void Filter()
+{
+    if (passedLine.RecId != 0)
+    {
+        FormDataSource localInventDimCombination_ds = InventDimCombination_ds;
+        QueryBuildDataSource localQBDS = localInventDimCombination_ds.queryBuildDataSource();
+        QueryBuildRange localQBR = SysQuery::findOrCreateRange( localQBDS, fieldNum(InventDimCombination, ItemId));
+        localQBR.value(passedLine.ItemId);
+    }
+}
+
+/// <summary>
+///
+/// </summary>
+public void init()
+{
+    super();
+    passedLine = element.args().record();
+    element.Filter();
+   
+}
