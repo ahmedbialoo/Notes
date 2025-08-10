@@ -1,0 +1,11 @@
+InventDimCombination    variantRec;
+int                     selectedCount;
+
+variantRec = InventDimCombination_ds.getFirst(true); // 'true' means only selected records
+while  (variantRec)
+{
+    
+    selectedCount++;
+
+    variantRec = InventDimCombination_ds.getNext();
+}
