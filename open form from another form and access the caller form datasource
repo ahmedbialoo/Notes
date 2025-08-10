@@ -1,0 +1,15 @@
+Args args = new Args();
+args.caller(element); // Pass the calling form
+args.record(Task_Lines); //  pass a record
+
+new MenuFunction(menuItemDisplayStr(Task_DeleteDialog), MenuItemType::Display).run(args);
+
+
+// Refresh Task_Header form after closing dialog
+FormRun callerForm = element.args().caller();
+if (callerForm)
+{
+    FormDataSource linesDs = callerForm.dataSource(2);
+    linesDs.reread();
+    linesDs.refresh();
+}
