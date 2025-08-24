@@ -1,0 +1,13 @@
+[Control("String")]
+ class DonationParams_FDSourceValueEcommerce
+ {
+     /// <summary>
+     ///
+     /// </summary>
+     public void lookup()
+     {
+         DimensionValueLookupHelper::lookupDimensionValues(DimensionAttribute::findByName(DonationParams.FDSource), this);
+
+     }
+
+ }
