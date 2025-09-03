@@ -1,0 +1,24 @@
+canRunInNewSession() → allows execution in a new session.
+
+description() → gives the job a name.
+
+canGoBatchJournal() → allows logging.
+
+runsImpersonated() → runs under impersonation (security context).
+
+canGoBatch() → confirms it can run as a batch process.
+  --------------------------------------------
+public static void main (Args _args)
+{
+    DonationListJob donationListJob = DonationListJob::construct();
+    
+    if (donationListJob.prompt())
+    {
+        donationListJob.runOperation();
+    }
+}
+Entry point if run directly.
+
+Calls prompt() → shows the dialog.
+
+If the user confirms, runOperation() executes.
