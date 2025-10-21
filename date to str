@@ -1,0 +1,3 @@
+date2Str(common.getFieldValue(reportFields.FieldName), 123,DateDay::Digits2, DateSeparator::Slash,DateDay::Digits2, DateSeparator::Slash,DateYear::Digits4);
+
+01/02/2005
