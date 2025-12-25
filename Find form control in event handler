@@ -1,0 +1,18 @@
+ [FormDataSourceEventHandler(formDataSourceStr(TitanStagingHeader, TitanStagingHeader), FormDataSourceEventType::Activated)]
+ public static void TitanStagingHeader_OnActivated(FormDataSource sender, FormDataSourceEventArgs e)
+ {
+     TitanStagingHeader titanStagingHeader = sender.cursor();
+
+     FormRun formRun = sender.formRun();
+     FormDesign formDesign = formRun.design();
+     FormControl TitanControllerV2 = formDesign.controlName(formControlStr(TitanStagingHeader,TitanControllerV2));
+
+     if(titanStagingHeader.TitanFileStatus == TitanFileStatus::Completed || 
+         titanStagingHeader.TitanFileStatus == TitanFileStatus::Invalid)
+     {
+         TitanControllerV2.enabled(false);
+     }
+     else
+         TitanControllerV2.enabled(true);
+
+ }
