@@ -1,0 +1,31 @@
+ [FormControlEventHandler(formControlStr(CustInvoiceJournal, GenerateE_Invoice), FormControlEventType::Clicked)]
+ public static void GenerateE_Invoice_OnClicked(FormControl _sender, FormControlEventArgs _e)
+ {
+     FormDataSource sender = _sender.formRun().dataSource('CustInvoiceJour');
+
+     CustInvoiceJour custInvoiceJour = _sender.formRun().dataSource('CustInvoiceJour').cursor();
+     
+     DialogButton    diagBut;
+
+     if (custInvoiceJour.InvoiceAmount > 0)
+     {
+         str strMessage = "You are trying to send Invoice to ZATCA. Select 'Yes' to send.";
+
+         str strTitle = "Create Invoice";
+
+         diagBut = Box::yesNo(strMessage, DialogButton::No, strTitle);
+
+         if (diagBut == DialogButton::No)
+         {
+             info("Operation Cancelled");
+         }
+         else if (diagBut == DialogButton::Yes)
+         {
+             TejClearTaxAPIHelper helper = new TejClearTaxAPIHelper();
+             helper.generateEInvoiceV3(custInvoiceJour);
+         }
+
+     }
+
+     sender.executeQuery();
+ }
