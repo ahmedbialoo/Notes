@@ -1,0 +1,26 @@
+ public static str resolvedFieldLabel(TableName _tableName, FieldName _fieldName)
+ {
+     TableId tableId;
+     FieldId fieldId;
+     DictField dictField;
+
+     if (!_tableName || !_fieldName)
+     {
+         return '';
+     }
+
+     tableId = tableName2Id(_tableName);
+     if (!tableId)
+     {
+         return '';
+     }
+
+     fieldId = fieldName2Id(tableId, _fieldName);
+     if (!fieldId)
+     {
+         return '';
+     }
+
+     dictField = new DictField(tableId, fieldId);
+     return dictField.label();
+ }
