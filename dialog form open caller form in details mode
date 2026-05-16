@@ -1,0 +1,67 @@
+[Form]
+public class SC_ExpectedReleasedProductCreate extends FormRun
+{
+    boolean closedOK;
+
+    #Task
+    public boolean validateWrite()
+    {
+        return SC_ExpectedReleasedProduct_DS.cursor().validateWrite();
+    }
+
+    public boolean write()
+    {
+        SC_ExpectedReleasedProduct_DS.create();
+
+        return true;
+    }
+
+    private void postWrite()
+    {
+        this.updateCallers();
+    }
+
+    public void updateCallers()
+    {
+        FormRun callerForm = element.args().caller();
+        FormDataSource rootDataSource;
+        SC_ExpectedReleasedProduct rec;
+
+        if (callerForm)
+        {
+            rec = SC_ExpectedReleasedProduct_DS.cursor();
+
+            rootDataSource = callerForm.dataSource(1);
+
+            if (rootDataSource)
+            {
+                rootDataSource.research();
+                rootDataSource.findRecord(rec);
+                rootDataSource.refresh();
+            }
+
+            // Open Details view
+            callerForm.viewOptionHelper().setViewOption(FormViewOption::Details);
+
+            // Optional:
+            callerForm.viewEditModeHelper().setViewEditMode(ViewEditMode::View);
+        }
+    }
+
+    /// <summary>
+    ///
+    /// </summary>
+    public void closeOk()
+    {
+        super();
+        if (element.validateWrite())
+        {
+            if(element.write())
+            {
+                this.postWrite();
+            }
+
+        }
+    }
+
+}
