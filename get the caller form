@@ -1,0 +1,24 @@
+ public static boolean isCalledFromVendInvoiceForm(Args _args)
+ {
+     FormRun formRun;
+
+     if (!_args)
+     {
+         return false;
+     }
+
+     // Submit is invoked from VendorInvoiceWorkflowDropDialog; walk callers to find VendInvoice.
+     formRun = _args.caller() as FormRun;
+
+     while (formRun)
+     {
+         if (formRun.name() == formStr(VendInvoice))
+         {
+             return true;
+         }
+
+         formRun = formRun.args().caller() as FormRun;
+     }
+
+     return false;
+ }
