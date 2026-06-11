@@ -1,0 +1,73 @@
+private HcmWorker findWorkerFromLedgerDimension(RefRecId _ledgerDimension)
+{
+    DimensionAttributeValueCombination workerDimensionCombination;
+    DimensionAttribute                 workerDimensionAttribute;
+    DimensionAttributeValue            workerDimensionAttributeValue;
+    DimensionAttributeValueSetStorage  workerDimensionStorage;
+    HcmWorker                          hcmworker;
+    FieldId                            workerDimensionFieldId,workerDimensionValueFieldId;
+    RefRecId                           workerDefaultDimension,workerRecId;
+    HcmPersonnelNumberId               workerPersonnelNumber;
+
+    if(!_ledgerDimension)
+    {
+        return hcmworker;
+    }
+
+    select firstonly workerDimensionCombination
+    where workerDimensionCombination.RecId == _ledgerDimension;
+
+    workerDimensionFieldId = fieldName2Id(tableNum(DimensionAttributeValueCombination), 'D07_Worker');
+    workerDimensionValueFieldId = fieldName2Id(tableNum(DimensionAttributeValueCombination), 'D07_WorkerValue');
+
+    if(workerDimensionCombination.RecId && workerDimensionFieldId)
+    {
+        workerRecId = workerDimensionCombination.(workerDimensionFieldId);
+
+        if(workerRecId)
+        {
+            hcmworker = HcmWorker::find(workerRecId);
+        }
+    }
+
+    if(!hcmworker.RecId && workerDimensionCombination.RecId && workerDimensionValueFieldId)
+    {
+        workerPersonnelNumber = workerDimensionCombination.(workerDimensionValueFieldId);
+
+        if(workerPersonnelNumber != '')
+        {
+            hcmworker = HcmWorker::findByPersonnelNumber(workerPersonnelNumber);
+        }
+    }
+
+    if(!hcmworker.RecId)
+    {
+        workerDimensionAttribute = DimensionAttribute::findByName('D07_Worker', false);
+
+        if(workerDimensionAttribute.RecId)
+        {
+            workerDefaultDimension = LedgerDimensionFacade::getDefaultDimensionFromLedgerDimension(_ledgerDimension);
+            workerDimensionStorage = DimensionAttributeValueSetStorage::find(workerDefaultDimension);
+            workerPersonnelNumber = workerDimensionStorage.getDisplayValueByDimensionAttribute(workerDimensionAttribute.RecId);
+
+            if(workerPersonnelNumber != '')
+            {
+                select firstonly workerDimensionAttributeValue
+                where workerDimensionAttributeValue.DimensionAttribute == workerDimensionAttribute.RecId
+                    && workerDimensionAttributeValue.DisplayValue == workerPersonnelNumber;
+
+                if(workerDimensionAttributeValue.EntityInstance)
+                {
+                    hcmworker = HcmWorker::find(workerDimensionAttributeValue.EntityInstance);
+                }
+
+                if(!hcmworker.RecId)
+                {
+                    hcmworker = HcmWorker::findByPersonnelNumber(workerPersonnelNumber);
+                }
+            }
+        }
+    }
+
+    return hcmworker;
+}
