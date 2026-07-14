@@ -1,0 +1,13 @@
+private boolean isActiveWorker(HcmWorker _worker)
+{
+    HcmEmployment employment;
+    utcdatetime now = DateTimeUtil::utcNow();
+
+    employment = HcmEmployment::findByWorkerLegalEntity(
+        _worker.RecId,
+        CompanyInfo::findDataArea(curExt()).RecId);
+
+    return employment.RecId
+        && employment.ValidFrom <= now
+        && employment.ValidTo >= now;
+}
