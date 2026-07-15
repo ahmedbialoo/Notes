@@ -1,0 +1,74 @@
+private static List getUserGroupEmailAddresses(UserGroupId _userGroupId)
+{
+    UserGroupList userGroupList;
+    UserInfo      userInfo;
+    SysUserInfo   sysUserInfo;
+    List          emailAddresses = new List(Types::String);
+    Set           uniqueEmails = new Set(Types::String);
+    str           emailAddress;
+
+    while select UserId from userGroupList
+        where userGroupList.GroupId == _userGroupId
+        exists join userInfo
+            where userInfo.Id == userGroupList.UserId
+               && userInfo.Enable == NoYes::Yes
+    {
+        sysUserInfo = SysUserInfo::find(userGroupList.UserId);
+        if (!sysUserInfo.RecId)
+        {
+            continue;
+        }
+
+        emailAddress = strRTrim(strLTrim(sysUserInfo.emailDisplay()));
+        if (!emailAddress)
+        {
+            emailAddress = strRTrim(strLTrim(sysUserInfo.Email));
+        }
+
+        if (emailAddress
+            && SysEmailDistributor::validateEmail(emailAddress)
+            && !uniqueEmails.in(emailAddress))
+        {
+            uniqueEmails.add(emailAddress);
+            emailAddresses.addEnd(emailAddress);
+        }
+    }
+
+    return emailAddresses;
+}
+private static void sendEmail(List _recipients, str _subject, str _body, str _sender)
+{
+    SysIMailerNonInteractive mailer = SysMailerFactory::getNonInteractiveMailer();
+    SysMailerMessageBuilder  messageBuilder;
+    ListEnumerator           recipientEnumerator = _recipients.getEnumerator();
+    boolean                  sent;
+
+    if (!mailer)
+    {
+        throw error("@ApplicationFoundation:EmailProviderNotFound");
+    }
+
+    messageBuilder = new SysMailerMessageBuilder();
+    messageBuilder.setFrom(_sender)
+                  .setSubject(_subject)
+                  .setBody(_body, false);
+
+    while (recipientEnumerator.moveNext())
+    {
+        messageBuilder.addTo(recipientEnumerator.current());
+    }
+
+    try
+    {
+        sent = mailer.sendNonInteractive(messageBuilder.getMessage());
+    }
+    catch (Exception::CLRError)
+    {
+        throw error(strFmt("Failed to send budget notification email. %1", AifUtil::getClrErrorMessage()));
+    }
+
+    if (!sent)
+    {
+        throw error("Failed to send budget notification email.");
+    }
+}
