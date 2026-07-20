@@ -1,0 +1,1 @@
+ProjTable_ds_object().fieldNum(ProjTable,UserGoupId).allowEdit(false);
