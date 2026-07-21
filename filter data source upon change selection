@@ -1,0 +1,71 @@
+internal final class SC_PurchPaymentStatus_Handler
+{
+   
+    /// <summary>
+///
+/// </summary>
+/// <param name="sender"></param>
+/// <param name="e"></param>
+[FormEventHandler(formStr(PurchTable), FormEventType::Initialized)]
+public static void PurchTable_OnInitialized(xFormRun sender, FormEventArgs e)
+{
+    FormComboBoxControl purchPaymentStatusFilter;
+
+        purchPaymentStatusFilter = sender.design().controlName(formControlStr(PurchTable, PurchPaymentStatusFilter));
+
+    if (purchPaymentStatusFilter)
+    {
+        purchPaymentStatusFilter.selection(enum2int(SC_PurchPaymentStatus::All));
+    }
+}
+
+    /// <summary>
+    ///
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
+    [FormControlEventHandler(formControlStr(PurchTable, PurchPaymentStatusFilter), FormControlEventType::SelectionChanged)]
+    public static void PurchPaymentStatusFilter_OnSelectionChanged(FormControl sender, FormControlEventArgs e)
+    {
+        FormDataSource DS = sender.formRun().dataSource(formDataSourceStr(PurchTable,PurchTable));
+        DS.executeQuery();
+    }
+
+    /// <summary>
+    /// Applies SC_PurchPaymentStatus range before the query runs (QueryExecuted is too late).
+    /// </summary>
+    [FormDataSourceEventHandler(formDataSourceStr(PurchTable, PurchTable), FormDataSourceEventType::QueryExecuting)]
+    public static void PurchTable_OnQueryExecuting(FormDataSource sender, FormDataSourceEventArgs e)
+    {
+        QueryBuildDataSource queryBuildDataSource;
+        FormRun              formRun;
+        FormComboBoxControl  purchPaymentStatusFilter;
+
+        formRun = sender.formRun();
+
+        if (!formRun)
+        {
+            return;
+        }
+
+        purchPaymentStatusFilter = formRun.design().controlName(formControlStr(PurchTable, PurchPaymentStatusFilter));
+
+        if (!purchPaymentStatusFilter || !purchPaymentStatusFilter.modified())
+        {
+            return;
+        }
+
+        queryBuildDataSource = sender.query().dataSourceTable(tablenum(PurchTable));
+
+        queryBuildDataSource.clearRange(fieldnum(PurchTable, SC_PurchPaymentStatus));
+
+        if (purchPaymentStatusFilter.selection() == enum2int(SC_PurchPaymentStatus::All))
+        {
+            return;
+        }
+
+        queryBuildDataSource.addRange(fieldnum(PurchTable, SC_PurchPaymentStatus))
+            .value(queryValue(purchPaymentStatusFilter.selection()));
+    }
+
+}
