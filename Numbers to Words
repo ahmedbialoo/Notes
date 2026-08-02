@@ -1,0 +1,388 @@
+/// <summary>
+/// Provides reusable Arabic and English amount-to-words conversion.
+/// </summary>
+public final class SC_NumberToWords
+{
+    /// <summary>
+    /// Converts an amount to Arabic words using riyals and halalas.
+    /// </summary>
+    /// <param name="_amount">The amount to convert.</param>
+    /// <returns>The amount written in Arabic words.</returns>
+    public static str amountToArabicWords(AmountCur _amount)
+    {
+        real absoluteAmount = abs(_amount);
+        int64 integerPart = any2Int64(System.Math::Floor(absoluteAmount));
+        int fractionPart = any2Int(round((absoluteAmount - integerPart) * 100, 1));
+        str result;
+
+        if (fractionPart == 100)
+        {
+            integerPart++;
+            fractionPart = 0;
+        }
+
+        result = SC_NumberToWords::integerToArabicWords(integerPart) + ' ريال';
+
+        if (fractionPart)
+        {
+            result += ' و'
+                + SC_NumberToWords::integerToArabicWords(fractionPart)
+                + ' هللة';
+        }
+        
+        if (_amount < 0)
+        {
+            result = 'سالب ' + result;
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Converts an amount to English words using riyals and halalas.
+    /// </summary>
+    /// <param name="_amount">The amount to convert.</param>
+    /// <returns>The amount written in English words.</returns>
+    public static str amountToEnglishWords(AmountCur _amount)
+    {
+        real absoluteAmount = abs(_amount);
+        int64 integerPart = any2Int64(System.Math::Floor(absoluteAmount));
+        int fractionPart = any2Int(round((absoluteAmount - integerPart) * 100, 1));
+        str result;
+
+        if (fractionPart == 100)
+        {
+            integerPart++;
+            fractionPart = 0;
+        }
+
+        result = SC_NumberToWords::integerToEnglishWords(integerPart)
+            + (integerPart == 1 ? ' riyal' : ' riyals');
+
+        if (fractionPart)
+        {
+            result += ' and '
+                + SC_NumberToWords::integerToEnglishWords(fractionPart)
+                + (fractionPart == 1 ? ' halala' : ' halalas');
+        }
+
+        if (_amount < 0)
+        {
+            result = 'minus ' + result;
+        }
+
+        return result;
+    }
+
+    private static str integerToArabicWords(int64 _number)
+    {
+        int scaleIndex;
+        int numberGroup;
+        str groupText;
+        str result;
+
+        if (!_number)
+        {
+            return 'صفر';
+        }
+
+        while (_number > 0)
+        {
+            numberGroup = any2Int(_number mod 1000);
+
+            if (numberGroup)
+            {
+                groupText = SC_NumberToWords::groupToArabicWords(numberGroup);
+                groupText = SC_NumberToWords::addArabicScale(
+                    groupText,
+                    numberGroup,
+                    scaleIndex);
+                result = groupText + (result ? ' و' + result : '');
+            }
+
+            _number = _number div 1000;
+            scaleIndex++;
+        }
+
+        return result;
+    }
+
+    private static str integerToEnglishWords(int64 _number)
+    {
+        int scaleIndex;
+        int numberGroup;
+        str groupText;
+        str result;
+
+        if (!_number)
+        {
+            return 'zero';
+        }
+
+        while (_number > 0)
+        {
+            numberGroup = any2Int(_number mod 1000);
+
+            if (numberGroup)
+            {
+                groupText = SC_NumberToWords::groupToEnglishWords(numberGroup);
+                groupText = SC_NumberToWords::addEnglishScale(groupText, scaleIndex);
+                result = groupText + (result ? ' ' + result : '');
+            }
+
+            _number = _number div 1000;
+            scaleIndex++;
+        }
+
+        return result;
+    }
+
+    private static str groupToArabicWords(int _number)
+    {
+        container units = [
+            '',
+            'واحد',
+            'اثنان',
+            'ثلاثة',
+            'أربعة',
+            'خمسة',
+            'ستة',
+            'سبعة',
+            'ثمانية',
+            'تسعة'
+        ];
+        container teens = [
+            'عشرة',
+            'أحد عشر',
+            'اثنا عشر',
+            'ثلاثة عشر',
+            'أربعة عشر',
+            'خمسة عشر',
+            'ستة عشر',
+            'سبعة عشر',
+            'ثمانية عشر',
+            'تسعة عشر'
+        ];
+        container tens = [
+            '',
+            '',
+            'عشرون',
+            'ثلاثون',
+            'أربعون',
+            'خمسون',
+            'ستون',
+            'سبعون',
+            'ثمانون',
+            'تسعون'
+        ];
+        container hundreds = [
+            '',
+            'مائة',
+            'مائتان',
+            'ثلاثمائة',
+            'أربعمائة',
+            'خمسمائة',
+            'ستمائة',
+            'سبعمائة',
+            'ثمانمائة',
+            'تسعمائة'
+        ];
+        int hundredPart = _number div 100;
+        int remainder = _number mod 100;
+        int unitPart;
+        int tenPart;
+        str result;
+
+        if (hundredPart)
+        {
+            result = conPeek(hundreds, hundredPart + 1);
+        }
+
+        if (remainder)
+        {
+            if (result)
+            {
+                result += ' و';
+            }
+
+            if (remainder < 10)
+            {
+                result += conPeek(units, remainder + 1);
+            }
+            else if (remainder < 20)
+            {
+                result += conPeek(teens, remainder - 9);
+            }
+            else
+            {
+                unitPart = remainder mod 10;
+                tenPart = remainder div 10;
+
+                if (unitPart)
+                {
+                    result += conPeek(units, unitPart + 1) + ' و';
+                }
+
+                result += conPeek(tens, tenPart + 1);
+            }
+        }
+
+        return result;
+    }
+
+    private static str groupToEnglishWords(int _number)
+    {
+        container units = [
+            '',
+            'one',
+            'two',
+            'three',
+            'four',
+            'five',
+            'six',
+            'seven',
+            'eight',
+            'nine'
+        ];
+        container teens = [
+            'ten',
+            'eleven',
+            'twelve',
+            'thirteen',
+            'fourteen',
+            'fifteen',
+            'sixteen',
+            'seventeen',
+            'eighteen',
+            'nineteen'
+        ];
+        container tens = [
+            '',
+            '',
+            'twenty',
+            'thirty',
+            'forty',
+            'fifty',
+            'sixty',
+            'seventy',
+            'eighty',
+            'ninety'
+        ];
+        int hundredPart = _number div 100;
+        int remainder = _number mod 100;
+        int unitPart;
+        int tenPart;
+        str result;
+
+        if (hundredPart)
+        {
+            result = conPeek(units, hundredPart + 1) + ' hundred';
+        }
+
+        if (remainder)
+        {
+            if (result)
+            {
+                result += ' ';
+            }
+
+            if (remainder < 10)
+            {
+                result += conPeek(units, remainder + 1);
+            }
+            else if (remainder < 20)
+            {
+                result += conPeek(teens, remainder - 9);
+            }
+            else
+            {
+                unitPart = remainder mod 10;
+                tenPart = remainder div 10;
+                result += conPeek(tens, tenPart + 1);
+
+                if (unitPart)
+                {
+                    result += '-' + conPeek(units, unitPart + 1);
+                }
+            }
+        }
+
+        return result;
+    }
+
+    private static str addArabicScale(str _groupText, int _group, int _scaleIndex)
+    {
+        container singularScales = [
+            '',
+            'ألف',
+            'مليون',
+            'مليار',
+            'تريليون',
+            'كوادريليون',
+            'كوينتليون'
+        ];
+        container dualScales = [
+            '',
+            'ألفان',
+            'مليونان',
+            'ملياران',
+            'تريليونان',
+            'كوادريليونان',
+            'كوينتليونان'
+        ];
+        container pluralScales = [
+            '',
+            'آلاف',
+            'ملايين',
+            'مليارات',
+            'تريليونات',
+            'كوادريليونات',
+            'كوينتليونات'
+        ];
+        str scale;
+
+        if (!_scaleIndex)
+        {
+            return _groupText;
+        }
+
+        if (_group == 1)
+        {
+            return conPeek(singularScales, _scaleIndex + 1);
+        }
+
+        if (_group == 2)
+        {
+            return conPeek(dualScales, _scaleIndex + 1);
+        }
+
+        scale = (_group >= 3 && _group <= 10)
+            ? conPeek(pluralScales, _scaleIndex + 1)
+            : conPeek(singularScales, _scaleIndex + 1);
+
+        return _groupText + ' ' + scale;
+    }
+
+    private static str addEnglishScale(str _groupText, int _scaleIndex)
+    {
+        container scales = [
+            '',
+            'thousand',
+            'million',
+            'billion',
+            'trillion',
+            'quadrillion',
+            'quintillion'
+        ];
+        str scale;
+
+        if (!_scaleIndex)
+        {
+            return _groupText;
+        }
+
+        scale = conPeek(scales, _scaleIndex + 1);
+        return _groupText + ' ' + scale;
+    }
+
+}
