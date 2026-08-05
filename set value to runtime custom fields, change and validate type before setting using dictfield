@@ -1,0 +1,118 @@
+[ExtensionOf(tableStr(SDSBusinessTripRequest))]
+final class SDSBusinessTripRequest_AlWedad_Extension
+{
+    public void populateEmployeeInfoFromWorker()
+    {
+        HcmWorker                         hcmWorker;
+        HcmPersonPrivateDetails           privateDetails;
+        HcmPersonIdentificationNumber     personIdentificationNumber;
+
+        if (!this.Worker)
+        {
+            return;
+        }
+
+        hcmWorker = HcmWorker::find(this.Worker);
+        privateDetails = HcmPersonPrivateDetails::findByPerson(hcmWorker.Person);
+
+        personIdentificationNumber.clear();
+
+        select firstonly IdentificationNumber from personIdentificationNumber
+            where personIdentificationNumber.Person == hcmWorker.Person
+            && personIdentificationNumber.IsPrimary == NoYes::Yes;
+
+        this.setCustomFieldValue('EnglishNameAsPassport_Custom', hcmWorker.name());
+        this.setCustomFieldValue('BirthDate_Custom', privateDetails.BirthDate);
+        this.setCustomFieldValue('PhoneNumber_Custom', hcmWorker.phone());
+        this.setCustomFieldValue('identificationNumber_Custom', personIdentificationNumber.IdentificationNumber);
+    }
+
+    /// <summary>
+    /// Writes a value to a runtime custom field, converting it to the field's declared type
+    /// and reporting the field name when the assignment fails.
+    /// </summary>
+    /// <param name = "_fieldName">Name of the custom field on SDSBusinessTripRequest.</param>
+    /// <param name = "_value">Value to assign.</param>
+    public void setCustomFieldValue(FieldName _fieldName, anytype _value)
+    {
+        DictField   dictField;
+        FieldId     fieldId = fieldName2Id(this.TableId, _fieldName);
+        Types       fieldType;
+        anytype     convertedValue;
+
+        if (!fieldId)
+        {
+            warning(strFmt("Field '%1' does not exist on table '%2' in this environment.",
+                _fieldName,
+                tableId2Name(this.TableId)));
+            return;
+        }
+
+        dictField = new DictField(this.TableId, fieldId);
+        fieldType = dictField.baseType();
+
+        try
+        {
+            convertedValue = SDSBusinessTripRequest::convertToFieldType(fieldType, _value);
+
+            this.setFieldValue(_fieldName, convertedValue);
+        }
+        catch (Exception::Error)
+        {
+            warning(strFmt("Field '%1' (%2) could not be set. Expected type '%3', value '%4' of type '%5'. %6",
+                _fieldName,
+                dictField.label(),
+                enum2Str(fieldType),
+                any2Str(_value),
+                enum2Str(typeOf(_value)),
+                infolog.text()));
+        }
+        catch (Exception::CLRError)
+        {
+            warning(strFmt("Field '%1' (%2) could not be set. Expected type '%3', value '%4'. %5",
+                _fieldName,
+                dictField.label(),
+                enum2Str(fieldType),
+                any2Str(_value),
+                AifUtil::getClrErrorMessage()));
+        }
+    }
+
+    /// <summary>
+    /// Converts a value to the base type of the target field so string/numeric custom fields
+    /// do not raise "The expected type was int64, but the encountered type was str".
+    /// </summary>
+    /// <param name = "_fieldType">Base type of the target field.</param>
+    /// <param name = "_value">Value to convert.</param>
+    /// <returns>The value converted to the field's base type.</returns>
+    public static anytype convertToFieldType(Types _fieldType, anytype _value)
+    {
+        Types valueType = typeOf(_value);
+
+        if (_fieldType == valueType)
+        {
+            return _value;
+        }
+
+        switch (_fieldType)
+        {
+            case Types::String:
+                return any2Str(_value);
+
+            case Types::Integer:
+                return valueType == Types::String ? str2Int(_value) : any2Int(_value);
+
+            case Types::Int64:
+                return valueType == Types::String ? str2Int64(_value) : any2Int64(_value);
+
+            case Types::Real:
+                return valueType == Types::String ? str2Num(_value) : any2Real(_value);
+
+            case Types::Date:
+                return valueType == Types::String ? str2Date(_value, 321) : any2Date(_value);
+        }
+
+        return _value;
+    }
+
+}
