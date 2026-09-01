@@ -1,0 +1,20 @@
+[ExtensionOf(tableStr(CustTable))]
+final class CustTable_SingleClic_Extension
+{
+
+    private TaxRegistrationNumber getRegistrationNumberByType(TaxRegistrationTypesList _type)
+    {
+        return TaxRegistration::getPrimaryAddressTaxRegistration(this, _type).RegistrationNumber;
+    }
+
+    display TaxRegistrationNumber getCRNo()
+    {
+        return this.getRegistrationNumberByType(TaxRegistrationTypesList::UID);
+    }
+
+    display TaxRegistrationNumber getVatNo()
+    {
+        return this.getRegistrationNumberByType(TaxRegistrationTypesList::TAXID);
+    }
+
+}
