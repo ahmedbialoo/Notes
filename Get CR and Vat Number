@@ -2,19 +2,18 @@
 final class CustTable_SingleClic_Extension
 {
 
-    private TaxRegistrationNumber getRegistrationNumberByType(TaxRegistrationTypesList _type)
-    {
-        return TaxRegistration::getPrimaryAddressTaxRegistration(this, _type).RegistrationNumber;
-    }
+    private TaxRegistrationNumber getRegistrationNumberByType(TaxRegistrationTypesList _type, date _date)
+ {
+     return TaxRegistration::getPrimaryAddressTaxRegistration(this, _type,_date).RegistrationNumber;
+ }
 
-    display TaxRegistrationNumber getCRNo()
-    {
-        return this.getRegistrationNumberByType(TaxRegistrationTypesList::UID);
-    }
+ public TaxRegistrationNumber getCRNo(date _date)
+ {
+     return this.getRegistrationNumberByType(TaxRegistrationTypesList::UID, _date);
+ }
 
-    display TaxRegistrationNumber getVatNo()
-    {
-        return this.getRegistrationNumberByType(TaxRegistrationTypesList::TAXID);
-    }
-
+ public TaxRegistrationNumber getVatNo(date _date)
+ {
+     return this.getRegistrationNumberByType(TaxRegistrationTypesList::TAXID, _date);
+ }
 }
