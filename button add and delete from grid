@@ -1,0 +1,25 @@
+/// <summary>
+/// Creates a process overdue line on the CRM tab.
+/// </summary>
+/// <param name = "_sender">New button.</param>
+/// <param name = "_e">Clicked event arguments.</param>
+[FormControlEventHandler(formControlStr(smmParameters, TMK_CRMProcessOverdueNew), FormControlEventType::Clicked)]
+public static void New_OnClicked(FormControl _sender, FormControlEventArgs _e)
+{
+    FormControl grid = _sender.formRun().design().controlName(formControlStr(smmParameters, TMK_CRMProcessOverdueGrid));
+
+    grid.dataSourceObject().create();
+}
+
+/// <summary>
+/// Deletes the selected process overdue line.
+/// </summary>
+/// <param name = "_sender">Delete button.</param>
+/// <param name = "_e">Clicked event arguments.</param>
+[FormControlEventHandler(formControlStr(smmParameters, TMK_CRMProcessOverdueDelete), FormControlEventType::Clicked)]
+public static void Delete_OnClicked(FormControl _sender, FormControlEventArgs _e)
+{
+    FormControl grid = _sender.formRun().design().controlName(formControlStr(smmParameters, TMK_CRMProcessOverdueGrid));
+
+    grid.dataSourceObject().delete();
+}
