@@ -1,0 +1,259 @@
+public static class TMK_LeadClassifications_Handler
+{
+    
+
+    
+
+    /// <summary>
+    ///
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
+    [FormControlEventHandler(formControlStr(smmParameters, TMK_CRMProcessOverdue_ProcessName), FormControlEventType::Lookup)]
+    public static void ProcessName_OnLookup(FormControl _sender, FormControlEventArgs _e)
+    {
+        TMK_CRMProcessOverdue::lookupProcessName(_sender);
+
+        FormControlCancelableSuperEventArgs cancelableArgs = _e as FormControlCancelableSuperEventArgs;
+
+        if (cancelableArgs)
+        {
+            cancelableArgs.CancelSuperCall();
+        }
+    }
+
+    /// <summary>
+    /// Refreshes campaign targets when a lead classification value changes.
+    /// </summary>
+    /// <param name="sender">Classification control.</param>
+    /// <param name="e">Modified event arguments.</param>
+    
+    [FormControlEventHandler(formControlStr(smmCampaignTable, PurchasingPower), FormControlEventType::Modified)]
+    public static void PurchasingPower_OnModified(FormControl sender, FormControlEventArgs e)
+    {
+        FormRun         formRun                 = sender.formRun();
+        FormDataSource  smmCampaignSelectionDS  = formRun.dataSource(formDataSourceStr(smmCampaignTable, smmCampaignSelection));
+
+        if (smmCampaignSelectionDS)
+        {
+            smmCampaignSelectionDS.executeQuery();
+        }
+    }
+
+    [FormControlEventHandler(formControlStr(smmCampaignTable, CustomerInterest), FormControlEventType::Modified)]    
+    public static void CustomerInterest_OnModified(FormControl sender, FormControlEventArgs e)
+
+    {
+        FormRun         formRun                 = sender.formRun();
+        FormDataSource  smmCampaignSelectionDS  = formRun.dataSource(formDataSourceStr(smmCampaignTable, smmCampaignSelection));
+
+        if (smmCampaignSelectionDS)
+        {
+            smmCampaignSelectionDS.executeQuery();
+        }
+    }
+
+    [FormControlEventHandler(formControlStr(smmCampaignTable, ProjectLocation), FormControlEventType::Modified)]
+
+    public static void ProjectLocation_OnModified(FormControl sender, FormControlEventArgs e)
+    {
+        FormRun         formRun                 = sender.formRun();
+        FormDataSource  smmCampaignSelectionDS  = formRun.dataSource(formDataSourceStr(smmCampaignTable, smmCampaignSelection));
+
+        if (smmCampaignSelectionDS)
+        {
+            smmCampaignSelectionDS.executeQuery();
+        }
+    }
+
+    [FormControlEventHandler(formControlStr(smmCampaignTable, ProjectType), FormControlEventType::Modified)]
+    public static void ProjectType_OnModified(FormControl sender, FormControlEventArgs e)
+    {
+        FormRun         formRun                 = sender.formRun();
+        FormDataSource  smmCampaignSelectionDS  = formRun.dataSource(formDataSourceStr(smmCampaignTable, smmCampaignSelection));
+
+        if (smmCampaignSelectionDS)
+        {
+            smmCampaignSelectionDS.executeQuery();
+        }
+    }
+
+    [FormControlEventHandler(formControlStr(smmCampaignTable, PurchaseType), FormControlEventType::Modified)]
+    public static void PurchaseType_OnModified(FormControl sender, FormControlEventArgs e)
+    {
+        FormRun         formRun                 = sender.formRun();
+        FormDataSource  smmCampaignSelectionDS  = formRun.dataSource(formDataSourceStr(smmCampaignTable, smmCampaignSelection));
+
+        if (smmCampaignSelectionDS)
+        {
+            smmCampaignSelectionDS.executeQuery();
+        }
+    }
+
+    /// <summary>
+    ///
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
+    [FormControlEventHandler(formControlStr(smmCampaignTable, CustomerInterest), FormControlEventType::Lookup)]
+    public static void CustomerInterest_OnLookup(FormControl sender, FormControlEventArgs e)
+    {
+        TMK_LeadClassifications_Handler::classificationLookup(sender, e, tableNum(TMK_CustomerInterest));
+    }
+
+    /// <summary>
+    ///
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
+    [FormControlEventHandler(formControlStr(smmCampaignTable, ProjectLocation), FormControlEventType::Lookup)]
+    public static void ProjectLocation_OnLookup(FormControl sender, FormControlEventArgs e)
+    {
+        TMK_LeadClassifications_Handler::classificationLookup(sender, e, tableNum(TMK_ProjectLocation));
+    }
+
+    /// <summary>
+    ///
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
+    [FormControlEventHandler(formControlStr(smmCampaignTable, ProjectType), FormControlEventType::Lookup)]
+    public static void ProjectType_OnLookup(FormControl sender, FormControlEventArgs e)
+    {
+        TMK_LeadClassifications_Handler::classificationLookup(sender, e, tableNum(TMK_ProjectType));
+    }
+
+    /// <summary>
+    ///
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
+    [FormControlEventHandler(formControlStr(smmCampaignTable, PurchaseType), FormControlEventType::Lookup)]
+    public static void PurchaseType_OnLookup(FormControl sender, FormControlEventArgs e)
+    {
+        TMK_LeadClassifications_Handler::classificationLookup(sender, e, tableNum(TMK_PurchaseType));
+    }
+
+    /// <summary>
+    ///
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
+    [FormControlEventHandler(formControlStr(smmCampaignTable, PurchasingPower), FormControlEventType::Lookup)]
+    public static void PurchasingPower_OnLookup(FormControl sender, FormControlEventArgs e)
+    {
+        TMK_LeadClassifications_Handler::classificationLookup(sender, e, tableNum(TMK_PurchasingPower));
+    }
+
+    /// <summary>
+    /// </summary>
+    /// <param name="sender">smmCampaignSelection data source.</param>
+    /// <param name="e">Query executing event arguments.</param>
+    [FormDataSourceEventHandler(formDataSourceStr(smmCampaignTable, smmCampaignSelection), FormDataSourceEventType::QueryExecuting)]
+    public static void smmCampaignSelection_OnQueryExecuting(FormDataSource sender, FormDataSourceEventArgs e)
+    {
+        QueryBuildDataSource    campaignSelectionDS;
+        QueryBuildDataSource    smmLeadTableDS;
+        QueryBuildDataSource    childDS;
+        FormRun                 formRun;
+        str                     customerInterestValue;
+        str                     projectLocationValue;
+        str                     projectTypeValue;
+        str                     purchaseTypeValue;
+        str                     purchasingPowerValue;
+        int                     childIndex;
+        boolean                 hasFilter;
+
+        formRun = sender.formRun();
+
+        if (!formRun)
+        {
+            return;
+        }
+
+        customerInterestValue   = TMK_LeadClassifications_Handler::classificationValue(formRun, formControlStr(smmCampaignTable, CustomerInterest));
+        projectLocationValue    = TMK_LeadClassifications_Handler::classificationValue(formRun, formControlStr(smmCampaignTable, ProjectLocation));
+        projectTypeValue        = TMK_LeadClassifications_Handler::classificationValue(formRun, formControlStr(smmCampaignTable, ProjectType));
+        purchaseTypeValue       = TMK_LeadClassifications_Handler::classificationValue(formRun, formControlStr(smmCampaignTable, PurchaseType));
+        purchasingPowerValue    = TMK_LeadClassifications_Handler::classificationValue(formRun, formControlStr(smmCampaignTable, PurchasingPower));
+
+        hasFilter = customerInterestValue || projectLocationValue || projectTypeValue || purchaseTypeValue || purchasingPowerValue;
+        campaignSelectionDS = sender.queryBuildDataSource();
+
+        for (childIndex = 1; childIndex <= campaignSelectionDS.childDataSourceCount(); childIndex++)
+        {
+            childDS = campaignSelectionDS.childDataSourceNo(childIndex);
+
+            if (childDS.table() == tableNum(smmLeadTable))
+            {
+                smmLeadTableDS = childDS;
+                break;
+            }
+        }
+
+        if (!smmLeadTableDS && hasFilter)
+        {
+            smmLeadTableDS = campaignSelectionDS.addDataSource(tableNum(smmLeadTable));
+            smmLeadTableDS.relations(false);
+            smmLeadTableDS.joinMode(JoinMode::ExistsJoin);
+            smmLeadTableDS.addLink(fieldNum(smmCampaignSelection, Party), fieldNum(smmLeadTable, Party));
+        }
+
+        if (!smmLeadTableDS)
+        {
+            return;
+        }
+
+        smmLeadTableDS.clearRanges();
+        smmLeadTableDS.enabled(hasFilter);
+
+        if (!hasFilter)
+        {
+            return;
+        }
+
+        TMK_LeadClassifications_Handler::applyLeadRange(smmLeadTableDS, fieldNum(smmLeadTable, CustomerInterest), customerInterestValue);
+        TMK_LeadClassifications_Handler::applyLeadRange(smmLeadTableDS, fieldNum(smmLeadTable, ProjectLocation), projectLocationValue);
+        TMK_LeadClassifications_Handler::applyLeadRange(smmLeadTableDS, fieldNum(smmLeadTable, ProjectType), projectTypeValue);
+        TMK_LeadClassifications_Handler::applyLeadRange(smmLeadTableDS, fieldNum(smmLeadTable, PurchaseType), purchaseTypeValue);
+        TMK_LeadClassifications_Handler::applyLeadRange(smmLeadTableDS, fieldNum(smmLeadTable, PurchasingPower), purchasingPowerValue);
+    }
+
+    private static void classificationLookup(FormControl _sender, FormControlEventArgs _e, TableId _tableId)
+    {
+        Query                   query = new Query();
+        SysTableLookup          lookup;
+        FormControlCancelableSuperEventArgs cancelableArgs;
+
+        query.addDataSource(_tableId);
+        lookup = SysTableLookup::newParameters(_tableId, _sender, true);
+        lookup.parmQuery(query);
+
+        lookup.addLookupField(fieldName2id(_tableId, fieldStr(TMK_CustomerInterest, Id)), true);
+        lookup.addLookupField(fieldName2id(_tableId, fieldStr(TMK_CustomerInterest, Description)));
+        lookup.performFormLookup();
+
+        cancelableArgs = _e as FormControlCancelableSuperEventArgs;
+
+        if (cancelableArgs)
+        {
+            cancelableArgs.CancelSuperCall();
+        }
+    }
+
+    private static str classificationValue(FormRun _formRun, str _controlName)
+    {
+        FormStringControl control = _formRun.design().controlName(_controlName);
+
+        return control.valueStr();
+    }
+
+    private static void applyLeadRange(QueryBuildDataSource _leadDS, FieldId _fieldId, str _value)
+    {
+        if (_value)
+        {
+            _leadDS.addRange(_fieldId).value(queryValue(_value));
+        }
+    }
+
+}
