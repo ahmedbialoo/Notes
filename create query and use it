@@ -1,0 +1,54 @@
+private static Query matchingContactsQuery(
+    str _customerInterestValue,
+    str _projectLocationValue,
+    str _projectTypeValue,
+    str _purchaseTypeValue,
+    str _purchasingPowerValue)
+{
+    Query                   query = new Query();
+    QueryBuildDataSource    contactDS = query.addDataSource(tableNum(ContactPerson));
+    QueryBuildDataSource    leadDS;
+
+    contactDS.addRange(fieldNum(ContactPerson, Inactive)).value(queryValue(NoYes::No));
+
+    leadDS = contactDS.addDataSource(tableNum(smmLeadTable));
+    leadDS.relations(false);
+    leadDS.joinMode(JoinMode::ExistsJoin);
+    leadDS.addLink(fieldNum(ContactPerson, ContactForParty), fieldNum(smmLeadTable, Party));
+
+    TMK_LeadClassifications_Handler::applyLeadRange(leadDS, fieldNum(smmLeadTable, CustomerInterest), _customerInterestValue);
+    TMK_LeadClassifications_Handler::applyLeadRange(leadDS, fieldNum(smmLeadTable, ProjectLocation), _projectLocationValue);
+    TMK_LeadClassifications_Handler::applyLeadRange(leadDS, fieldNum(smmLeadTable, ProjectType), _projectTypeValue);
+    TMK_LeadClassifications_Handler::applyLeadRange(leadDS, fieldNum(smmLeadTable, PurchaseType), _purchaseTypeValue);
+    TMK_LeadClassifications_Handler::applyLeadRange(leadDS, fieldNum(smmLeadTable, PurchasingPower), _purchasingPowerValue);
+
+    return query;
+}
+queryRun = new QueryRun(TMK_LeadClassifications_Handler::matchingContactsQuery(
+    customerInterestValue,
+    projectLocationValue,
+    projectTypeValue,
+    purchaseTypeValue,
+    purchasingPowerValue));
+
+while (queryRun.next())
+{
+    contactPerson = queryRun.get(tableNum(ContactPerson));
+
+    if (!contactPerson.ContactForParty || !contactPerson.ContactPersonId)
+    {
+        continue;
+    }
+
+    newSelection.clear();
+    newSelection.CampaignId = campaign.CampaignId;
+    newSelection.initValue();
+    newSelection.Party = contactPerson.ContactForParty;
+    newSelection.ContactPersonId = contactPerson.ContactPersonId;
+    newSelection.BroadcastType = smmCampaignBroadcastType::NotBroadcasted;
+
+    if (newSelection.validateWrite())
+    {
+        newSelection.insert();
+    }
+}
