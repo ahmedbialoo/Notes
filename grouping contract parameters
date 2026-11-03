@@ -1,0 +1,59 @@
+[
+    DataContract,
+    SysOperationGroupAttribute('DeliveryDate', literalStr("Delivery date"), '1'),
+    SysOperationGroupAttribute('Filters',      literalStr("Filters"),       '2')
+]
+internal final class TMK_ProductionOrderReportContract
+{
+    FromDate fromDate;
+    ToDate toDate;
+    ProdId prodId;
+    ProdJournalId journalId;
+
+    [
+        DataMember("fromDate"),
+        SysOperationLabelAttribute(literalStr("From")),
+        SysOperationGroupMemberAttribute('DeliveryDate'),
+        SysOperationDisplayOrderAttribute('1')
+    ]
+    public FromDate parmFromDate(FromDate _fromDate = fromDate)
+    {
+        fromDate = _fromDate;
+        return fromDate;
+    }
+
+    [
+        DataMember("toDate"),
+        SysOperationLabelAttribute(literalStr("To")),
+        SysOperationGroupMemberAttribute('DeliveryDate'),
+        SysOperationDisplayOrderAttribute('2')
+    ]
+    public ToDate parmToDate(ToDate _toDate = toDate)
+    {
+        toDate = _toDate;
+        return toDate;
+    }
+
+    [
+        DataMember("prodId"),
+        SysOperationGroupMemberAttribute('Filters'),
+        SysOperationDisplayOrderAttribute('1')
+    ]
+    public ProdId parmProdId(ProdId _prodId = prodId)
+    {
+        prodId = _prodId;
+        return prodId;
+    }
+
+    [
+        DataMember("journalId"),
+        SysOperationGroupMemberAttribute('Filters'),
+        SysOperationDisplayOrderAttribute('2')
+    ]
+    public ProdJournalId parmJournalId(ProdJournalId _journalId = journalId)
+    {
+        journalId = _journalId;
+        return journalId;
+    }
+
+}
