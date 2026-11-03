@@ -1,0 +1,50 @@
+
+[DataContract]
+internal final class TMK_ProductionOrderReportContract
+{
+    FromDate fromDate;
+    ToDate toDate;
+    ProdId prodId;
+    ProdJournalId journalId;
+
+    [
+        DataMember("fromDate"),
+        SysOperationDisplayOrderAttribute('1')
+    ]
+    public FromDate parmFromDate(FromDate _fromDate = fromDate)
+    {
+        fromDate = _fromDate;
+        return fromDate;
+    }
+
+    [
+        DataMember("toDate"),
+        SysOperationDisplayOrderAttribute('2')
+    ]
+    public ToDate parmToDate(ToDate _toDate = toDate)
+    {
+        toDate = _toDate;
+        return toDate;
+    }
+
+    [
+        DataMember("prodId"),
+        SysOperationDisplayOrderAttribute('3')
+    ]
+    public ProdId parmProdId(ProdId _prodId = prodId)
+    {
+        prodId = _prodId;
+        return prodId;
+    }
+
+    [
+        DataMember("journalId"),
+        SysOperationDisplayOrderAttribute('4')
+    ]
+    public ProdJournalId parmJournalId(ProdJournalId _journalId = journalId)
+    {
+        journalId = _journalId;
+        return journalId;
+    }
+
+}
