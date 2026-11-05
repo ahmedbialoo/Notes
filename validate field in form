@@ -1,0 +1,12 @@
+[FormDataFieldEventHandler(formDataFieldStr(TitanConfig, SCValidationEmailGroup, GroupId), FormDataFieldEventType::Validated)]
+public static void SCValidationEmailGroup_GroupId_OnValidated(FormDataObject _sender, FormDataFieldEventArgs _e)
+{
+    SCValidationEmailGroup validationEmailGroup = _sender.datasource().cursor();
+
+    if (validationEmailGroup.GroupId
+        && !SCValidationEmailGroup::exist(validationEmailGroup.GroupId))
+    {
+        checkFailed(strFmt("@SCMedadLabels:ValidationEmailGroupNotFound", validationEmailGroup.GroupId));
+        validationEmailGroup.GroupId = '';
+    }
+}
