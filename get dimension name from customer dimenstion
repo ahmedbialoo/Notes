@@ -1,0 +1,16 @@
+HcmEmployment emplyment = HcmEmployment::getActiveEmploymentsByWorker(HcmWorker::find(_reservedTripDetails.Worker).RecId);
+DimensionAttributeValueSetStorage storage = DimensionAttributeValueSetStorage::find(emplyment.DefaultDimension);
+DimensionAttributeValue dimensionAttributeValue;
+DimensionAttribute dimensionAttribute = DimensionAttribute::findByName(#D04_Section);
+DimensionValue D04_SectionValue;
+Name D04_SectionDescription;
+if(storage)
+    D04_SectionValue = storage.getDisplayValueByDimensionAttribute(dimensionAttribute.RecId);
+if (D04_SectionValue)
+{
+    dimensionAttributeValue =
+DimensionAttributeValue::findByDimensionAttributeAndValue(
+    dimensionAttribute,
+    D04_SectionValue);
+    D04_SectionDescription = dimensionAttributeValue.getName();
+}
