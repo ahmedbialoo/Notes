@@ -1,0 +1,219 @@
+internal final class TMK_PurchPurchaseOrderDP_EventHandler
+{
+    /// <summary>
+    ///
+    /// </summary>
+    /// <param name="args"></param>
+    [PostHandlerFor(classStr(PurchPurchaseOrderDP), methodStr(PurchPurchaseOrderDP, processReport))]
+    public static void PurchPurchaseOrderDP_Post_processReport(XppPrePostArgs args)
+    {
+        PurchPurchaseOrderDP purchOrderDP  = args.getThis() as PurchPurchaseOrderDP;
+        PurchPurchaseOrderHeader purchPurchaseOrderHeader;
+        PurchPurchaseOrderTmp purchPurchaseOrderTmp;
+        PurchTable purchTable;
+        VendTable vendTable;
+        DirPartyTable dirPartyTable;
+        DirOrganizationBase dirOrganizationBase;
+        PurchReqTable purchReqTable;
+        PurchLine purchLine;
+        HcmWorker _Worker;
+        TaxItemGroup taxItemGroup;
+        InventTable inventTable;
+        EcoResProduct ecoResProduct;
+        TaxOnItem taxOnItem;
+        TaxItemGroupHeading taxItemGroupHeading;
+        PurchTotals purchTotals;
+        InventLocation inventLocation;
+        LogisticsLocation LogisticsLocation;
+        LogisticsElectronicAddress electronicAddress;
+        LogisticsPostalAddress LogisticsPostalAddress;
+        InventLocationLogisticsLocation InventLocationLogisticsLocation;
+        purchPurchaseOrderHeader = purchOrderDP.getPurchPurchaseOrderHeader();
+        purchPurchaseOrderTmp = purchOrderDP.getPurchPurchaseOrderTmp();
+
+        while select forupdate purchPurchaseOrderHeader
+        {
+            purchTable = PurchTable::find(purchPurchaseOrderHeader.PurchId);
+            purchTotals = PurchTotals::newPurchTable(purchTable);
+            vendTable = purchTable.vendTable_OrderAccount();
+            dirPartyTable = vendTable.DirPartyTable();
+            _Worker = HcmWorker::find(purchTable.WorkerPurchPlacer);
+            select firstonly1 dirOrganizationBase where dirOrganizationBase.RecId == dirPartyTable.RecId;
+            select firstonly1 purchReqTable join purchLine
+             where purchLine.PurchReqId == purchReqTable.PurchReqId && purchLine.PurchId == purchTable.PurchId;
+            inventLocation = InventLocation::find(purchTable.InventLocationId);
+
+            select firstonly logisticsPostalAddress
+                 exists join LogisticsLocation
+                       where LogisticsLocation.RecId == logisticsPostalAddress.Location
+                 exists join inventLocationLogisticsLocation
+                       where inventLocationLogisticsLocation.Location == LogisticsLocation.RecId
+                          && inventLocationLogisticsLocation.InventLocation == inventLocation.RecId;
+
+            //select Description
+            //  from electronicAddress
+            // where electronicAddress.RecId == dirPartyTable.PrimaryContactPhone;
+
+            ttsbegin;
+            purchTotals.calc();
+            purchPurchaseOrderHeader.selectForUpdate(true);
+            purchPurchaseOrderHeader.TMK_VendAccountNum = vendTable.AccountNum;
+            purchPurchaseOrderHeader.TMK_VendKnownAs = dirPartyTable.KnownAs;
+            purchPurchaseOrderHeader.DlvTerm = DlvMode::find(purchTable.DlvMode).Txt;
+            purchPurchaseOrderHeader.TMK_VendorName = purchTable.VendorRef; //VendTable::find(purchTable.VendorRef).name();
+            purchPurchaseOrderHeader.TMK_VendPhoneticName = dirOrganizationBase.PhoneticName;
+            purchPurchaseOrderHeader.TMK_VendEmail = dirPartyTable.primaryEmail();
+            purchPurchaseOrderHeader.TMK_VendPhone = dirPartyTable.primaryPhone();
+            purchPurchaseOrderHeader.TMK_VendPhoneFax = dirPartyTable.primaryFax();
+            purchPurchaseOrderHeader.TMK_VendContactPerson = purchTable.contactPersonName(); //electronicAddress.Description;// dirPartyTable.Name;
+            purchPurchaseOrderHeader.TMK_CostCenter = TMK_PurchPurchaseOrderDP_EventHandler::getDimensionDisplayValue(purchTable.DefaultDimension, "COSTCENTER");
+            purchPurchaseOrderHeader.TMK_PurchReqId = purchReqTable.PurchReqId;
+            purchPurchaseOrderHeader.TMK_WorkerContactPerson = _Worker.name();
+            purchPurchaseOrderHeader.TMK_WorkerEmail = _Worker.email();
+            purchPurchaseOrderHeader.TMK_WorkerPhone = _Worker.phone();
+            purchPurchaseOrderHeader.TMK_DeliveryDate = purchTable.DeliveryDate;
+            purchPurchaseOrderHeader.TMK_PaymentTerms = purchTable.Payment().Description;
+            purchPurchaseOrderHeader.TMK_DeliveryTerms = DlvTerm::find(purchTable.DlvTerm).Txt;
+            purchPurchaseOrderHeader.TMK_DeliveryLocation = inventLocation.Name;
+            purchPurchaseOrderHeader.TMK_ServicePeriodFrom = purchTable.TMK_ServicePeriodFrom;
+            purchPurchaseOrderHeader.TMK_ServicePeriodTill = purchTable.TMK_ServicePeriodTill;
+            purchPurchaseOrderHeader.TMK_Note = purchTable.TMK_Note;
+            purchPurchaseOrderHeader.TMK_PaymentSchedule = purchTable.TMK_PaymentSchedule;
+            purchPurchaseOrderHeader.TMK_PayTrm = purchTable.TMK_PayTrm;
+            purchPurchaseOrderHeader.TMK_VendorScoopOfSupply = purchTable.TMK_VendorScoopOfSupply;
+            purchPurchaseOrderHeader.TMK_KanoozScoopOfSupply = purchTable.TMK_KanoozScoopOfSupply;
+            purchPurchaseOrderHeader.TMK_Note1 = purchTable.TMK_Note1;
+            purchPurchaseOrderHeader.TMK_AmountInWordsEN = TMK_ConvertAmountToWordEN::amountToWord(purchPurchaseOrderHeader.CurrencyCode, (purchTotals.purchTotalAmount()));
+            purchPurchaseOrderHeader.CompanyAddress = inventLocation.address();// strFmt("%1, %2", LogisticsPostalAddress.PostBox, LogisticsPostalAddress.Street);
+            purchPurchaseOrderHeader.TMK_CurrencyName = Currency::find(purchPurchaseOrderHeader.CurrencyCode).Txt;// strFmt("%1, %2", LogisticsPostalAddress.PostBox, LogisticsPostalAddress.Street);
+            purchPurchaseOrderHeader.TMK_ApprovedBy = "BR. Mgr / Reg. Mgr / V. President";//TMK_PurchPurchaseOrderDP_EventHandler::getLastPOApprovalUser(purchTable);
+            purchPurchaseOrderHeader.TMK_PreparedBy = _Worker.name();
+            // Totals as on the Purchase order totals form (PurchTotals), with line discounts shown separately
+            // so the footer matches the lines: gross excl. VAT - (line + order discount) + VAT = total
+            AmountCur orderLineDiscTotal = TMK_PurchPurchaseOrderDP_EventHandler::calcOrderLineDiscAmount(purchTable.PurchId);
+            purchPurchaseOrderHeader.SalesOrderBalance = purchTotals.purchBalance() + orderLineDiscTotal;  // Subtotal before discounts
+            purchPurchaseOrderHeader.EndDisc = purchTotals.purchEndDisc() + orderLineDiscTotal;            // Total discount
+            purchPurchaseOrderHeader.SumTax = purchTotals.purchTaxTotal();               // Sales tax
+            purchPurchaseOrderHeader.Amount = purchTotals.purchTotalAmount();            // Total amount
+            purchPurchaseOrderHeader.update();
+            ttscommit;
+        }
+
+        while select forupdate purchPurchaseOrderTmp
+        {
+            purchLine = PurchLine::findInventTransId(purchPurchaseOrderTmp.PurchLineInventTransId);
+            purchTable = purchLine.purchTable();
+            vendTable = purchTable.vendTable_OrderAccount();
+            dirPartyTable = vendTable.DirPartyTable();
+            _Worker = HcmWorker::find(purchTable.WorkerPurchPlacer);
+            select firstonly1 dirOrganizationBase where dirOrganizationBase.RecId == dirPartyTable.RecId;
+            inventTable = InventTable::find(purchPurchaseOrderTmp.ItemId);
+            ecoResProduct = EcoResProduct::find(inventTable.Product);
+            taxOnItem = TaxOnItem::findTaxItemGroup_IN(purchLine.TaxItemGroup);
+
+            ttsbegin;
+            purchPurchaseOrderTmp.selectForUpdate(true);
+            purchPurchaseOrderTmp.TMK_PartNo = ecoResProduct.SearchName;
+            // Lines with sales tax group "NonTaxable" carry no VAT
+            boolean isNonTaxable = (purchLine.TaxGroup == "NonTaxable");
+            real vatPercent = isNonTaxable ? 0 : taxOnItem.showTaxValue();
+            purchPurchaseOrderTmp.TMK_VAT = strFmt("%1", vatPercent);
+            // LineAmount from the standard DP is already net of the line discount (LineDisc / LinePercent / multiline discount)
+            AmountCur netLineAmount = purchPurchaseOrderTmp.LineAmount;
+            AmountCur lineDiscAmount = TMK_PurchPurchaseOrderDP_EventHandler::calcLineDiscAmount(purchLine);
+            AmountCur endDiscShare = 0;
+
+            // Line share of the order total discount (PurchTable.DiscPercent), same eligibility rule as PurchTotals.lineEndDisc()
+            if (purchTable.DiscPercent
+                && (purchLine.isCategoryBased() || InventTableModule::find(purchLine.ItemId, ModuleInventPurchSales::Purch).EndDisc))
+            {
+                endDiscShare = CurrencyExchangeHelper::amount(netLineAmount * purchTable.DiscPercent / 100, purchTable.CurrencyCode);
+            }
+
+            // Report shows: gross price excl. VAT - total discount (line + order) + VAT = total
+            purchPurchaseOrderTmp.LineAmount = netLineAmount + lineDiscAmount;
+            purchPurchaseOrderTmp.TMK_LineDiscount = lineDiscAmount + endDiscShare;
+            // VAT is calculated after all discounts, as D365 does
+            purchPurchaseOrderTmp.TMK_VATAmount = CurrencyExchangeHelper::amount(((netLineAmount - endDiscShare) * vatPercent) / 100, purchTable.CurrencyCode);
+            purchPurchaseOrderTmp.TMK_Total = netLineAmount - endDiscShare + purchPurchaseOrderTmp.TMK_VATAmount;//purchPurchaseOrderTmp.TMK_VATAmount = purchTotals.purchTaxTotal();
+            //purchPurchaseOrderTmp.TMK_Total = purchTotals.purchTotalAmount();
+            purchPurchaseOrderTmp.update();
+            ttscommit;
+        }
+    }
+
+    /// <summary>
+    /// Line discount amount of a purchase line (LineDisc, LinePercent and multiline discount),
+    /// i.e. the gross amount before discounts minus the line amount.
+    /// </summary>
+    public static AmountCur calcLineDiscAmount(PurchLine _purchLine)
+    {
+        if (!_purchLine)
+        {
+            return 0;
+        }
+
+        AmountCur grossAmount = PriceDisc::price2Amount(
+            _purchLine.PurchPrice,
+            _purchLine.PriceUnit,
+            0,                          // no discount amount
+            _purchLine.PurchQty,
+            _purchLine.PurchQty,
+            _purchLine.PurchMarkup,
+            0,                          // no discount percent
+            _purchLine.CurrencyCode,
+            0);                         // _amount: only used to prorate partial deliveries (deliverNow != qty)
+
+        return grossAmount - _purchLine.LineAmount;
+    }
+
+    /// <summary>
+    /// Sum of line discount amounts of all lines of a purchase order.
+    /// </summary>
+    public static AmountCur calcOrderLineDiscAmount(PurchId _purchId)
+    {
+        PurchLine purchLine;
+        AmountCur total;
+
+        while select purchLine
+            where purchLine.PurchId   == _purchId
+               && purchLine.IsDeleted == NoYes::No
+        {
+            total += TMK_PurchPurchaseOrderDP_EventHandler::calcLineDiscAmount(purchLine);
+        }
+
+        return total;
+    }
+
+    public static UserId getLastPOApprovalUser(purchTable purchTable)
+    {
+        WorkflowTrackingTable               trackingTable;
+        WorkflowTrackingStatusTable         statusTable;
+    
+     
+        if (!purchTable)
+        {
+            return '';
+        }
+
+        select firstOnly User from trackingTable
+        order by trackingTable.CreatedDateTime desc
+        where trackingTable.TrackingType == WorkflowTrackingType::Approval
+        exists join statusTable
+            where statusTable.RecId == trackingTable.WorkflowTrackingStatusTable
+               && statusTable.ContextRecId       == purchTable.RecId
+               && statusTable.ContextTableId     == purchTable.TableId;
+
+        return trackingTable.User;
+    }
+
+    public static str getDimensionDisplayValue(RecId defaultDimension, Name dimName)
+    {
+        DimensionAttributeValueSetStorage dimStorage = DimensionAttributeValueSetStorage::find(defaultDimension);
+        DimensionAttribute dimAttribute = DimensionAttribute::findByName(dimName);
+        DimensionValue displayValue = dimStorage.getDisplayValueByDimensionAttribute(dimAttribute.RecId);
+        DimensionAttributeValue dimAttributeValue = DimensionAttributeValue::findByDimensionAttributeAndValue(dimAttribute, displayValue);
+        return dimAttributeValue.getName();
+    }
+
+}
