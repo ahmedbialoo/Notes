@@ -1,0 +1,198 @@
+/// <summary>
+/// Extends the purchase requisition review workflow so that a task work item assigned
+/// to the user who created the purchase requisition is skipped (auto-completed).
+/// </summary>
+/// <remarks>
+/// Applies to the PR review tasks (<c>PurchReqReviewTask</c> and <c>PurchReqLineReviewTask</c>),
+/// which both use <c>PurchReqWFTaskCreatedEventHandler</c> as their work-items-created handler.
+/// For role based / user group assignments the workflow engine creates one work item per user.
+/// Only the creator's work item is closed; the other users' work items stay pending:
+///  - Creator is the only assignee                 -> the task is completed (skipped).
+///  - Others assigned, policy Single approver      -> only the creator's work item is closed, without
+///                                                    sending an outcome, so the step waits for the others.
+///  - Others assigned, policy All/Majority/Percent -> the creator's work item is completed as the creator's
+///                                                    response; the others still have to respond.
+/// </remarks>
+[ExtensionOf(classStr(WorkflowQueueCreatedEventHandler))]
+final class WorkflowQueueCreatedEventHandler_TMK_Customizations_Extension
+{
+    public void created(WorkflowWorkItemsEventArgs _workflowWorkItemsEventArgs)
+    {
+        next created(_workflowWorkItemsEventArgs);
+
+        if (this is PurchReqWFTaskCreatedEventHandler)
+        {
+            this.tmkAutoCompleteCreatorTasks(_workflowWorkItemsEventArgs.parmWorkflowWorkItems());
+        }
+    }
+
+    /// <summary>
+    /// Handles every newly created task work item that is assigned to the purchase requisition creator.
+    /// </summary>
+    /// <param name = "_workItemRecIds">RecIds of the work items created for the current task step.</param>
+    private void tmkAutoCompleteCreatorTasks(List _workItemRecIds)
+    {
+        ListEnumerator          workItemEnumerator;
+        WorkflowWorkItemTable   workItem;
+
+        if (!_workItemRecIds)
+        {
+            return;
+        }
+
+        workItemEnumerator = _workItemRecIds.getEnumerator();
+
+        while (workItemEnumerator.moveNext())
+        {
+            workItem = WorkflowWorkItemTable::findRecId(workItemEnumerator.current());
+
+            if (this.tmkIsTaskAssignedToCreator(workItem))
+            {
+                if (!this.tmkOtherUsersPending(workItem)
+                    || WorkflowStepTable::find(workItem.StepId).CompletionPolicy != WorkflowStepCompletionPolicy::Single)
+                {
+                    // Creator is the only assignee, or the policy needs the others' responses anyway.
+                    this.tmkCompleteTask(workItem);
+                }
+                else
+                {
+                    // Completing would end the step for everyone; only remove the creator's work item.
+                    this.tmkCloseCreatorWorkItem(workItem);
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Checks whether the work item is a pending Task work item assigned to the user who created the purchase requisition.
+    /// </summary>
+    /// <param name = "_workItem">The work item to check.</param>
+    /// <returns>true if the work item should be auto-completed; otherwise, false.</returns>
+    private boolean tmkIsTaskAssignedToCreator(WorkflowWorkItemTable _workItem)
+    {
+        UserId  createdBy;
+
+        if (!_workItem.RecId
+            || !_workItem.UserId
+            || _workItem.Type   != WorkflowWorkItemType::WorkItem
+            || _workItem.Status != WorkflowWorkItemStatus::Pending)
+        {
+            return false;
+        }
+
+        // Only workflow elements of type Task (approvals are not affected).
+        if (_workItem.workflowElementTable().ElementType != WorkflowElementType::Task)
+        {
+            return false;
+        }
+
+        createdBy = this.tmkPurchReqCreatedBy(_workItem);
+
+        return createdBy && createdBy == _workItem.UserId;
+    }
+
+    /// <summary>
+    /// Checks whether other users have pending work items on the same task step of the same workflow instance.
+    /// </summary>
+    /// <param name = "_workItem">The creator's work item.</param>
+    /// <returns>true if another user has a pending work item on the step; otherwise, false.</returns>
+    private boolean tmkOtherUsersPending(WorkflowWorkItemTable _workItem)
+    {
+        WorkflowWorkItemTable   otherWorkItem;
+
+        select firstonly RecId from otherWorkItem
+            where otherWorkItem.CorrelationId   == _workItem.CorrelationId
+               && otherWorkItem.StepId          == _workItem.StepId
+               && otherWorkItem.Status          == WorkflowWorkItemStatus::Pending
+               && otherWorkItem.UserId          != _workItem.UserId
+               && otherWorkItem.RecId           != _workItem.RecId;
+
+        return otherWorkItem.RecId != 0;
+    }
+
+    /// <summary>
+    /// Gets the user who created the purchase requisition the work item refers to.
+    /// </summary>
+    /// <param name = "_workItem">The work item.</param>
+    /// <returns>The <c>CreatedBy</c> user of the purchase requisition header.</returns>
+    private UserId tmkPurchReqCreatedBy(WorkflowWorkItemTable _workItem)
+    {
+        PurchReqTable   purchReqTable;
+
+        switch (_workItem.RefTableId)
+        {
+            case tableNum(PurchReqTable):
+                purchReqTable = PurchReqTable::find(_workItem.RefRecId);
+                break;
+
+            case tableNum(PurchReqLine):
+                purchReqTable = PurchReqLine::find(_workItem.RefRecId).purchReqTable();
+                break;
+        }
+
+        return purchReqTable.CreatedBy;
+    }
+
+    /// <summary>
+    /// Completes the task work item using the task's completing outcome, on behalf of the assigned user.
+    /// The outcome counts towards the step's completion policy.
+    /// </summary>
+    /// <param name = "_workItem">The work item to complete.</param>
+    private void tmkCompleteTask(WorkflowWorkItemTable _workItem)
+    {
+        WorkflowElementTable    elementTable = _workItem.workflowElementTable();
+        SysDictWorkflowElement  dictElement;
+        WorkflowOutcomeName     completingOutcome;
+
+        dictElement = new SysDictWorkflowElement(elementTable.ElementType, elementTable.ElementName);
+        completingOutcome = dictElement.getCompletingOutcome();
+
+        if (completingOutcome)
+        {
+            WorkflowWorkItem::takeAction(
+                _workItem.Id,
+                completingOutcome,
+                this.tmkAutoCompleteComment());
+        }
+    }
+
+    /// <summary>
+    /// Closes only the creator's work item and records it in the workflow history, without sending
+    /// a completion message to the workflow runtime, so the step keeps waiting for the other users.
+    /// </summary>
+    /// <param name = "_workItem">The creator's work item.</param>
+    private void tmkCloseCreatorWorkItem(WorkflowWorkItemTable _workItem)
+    {
+        WorkflowWorkItemTable   workItem;
+
+        new InteropPermission(InteropKind::ClrInterop).assert();
+
+        ttsbegin;
+
+        workItem = WorkflowWorkItemTable::findRecId(_workItem.RecId, true);
+
+        if (workItem.Status == WorkflowWorkItemStatus::Pending)
+        {
+            WorkflowTrackingTable::saveTracking(SysWorkflowTracking::newWorkItemCompleted(
+                SysWorkflowWorkItem::createFromWorkItem(workItem),
+                workItem,
+                workItem.UserId,
+                this.tmkAutoCompleteComment(),
+                ''));
+
+            workItem.Status         = WorkflowWorkItemStatus::Completed;
+            workItem.NotificationId = 0;
+            workItem.update();
+        }
+
+        ttscommit;
+
+        CodeAccessPermission::revertAssert();
+    }
+
+    private WorkflowComment tmkAutoCompleteComment()
+    {
+        return "Auto-completed: task is assigned to the user who created the purchase requisition.";
+    }
+
+}
